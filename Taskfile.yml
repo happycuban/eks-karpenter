@@ -1,0 +1,285 @@
+# Taskfile for EKS Cluster Management
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  CLUSTER_NAME: happycuban-demo-cluster
+  REGION: us-west-2
+  HOSTED_ZONE_ID: ZXXXXXXXXXXXXXXXXXXXXX  # Replace with your Route53 zone ID
+  DOMAIN: happycuban-example.dk
+
+tasks:
+
+  # ==============================================================================
+  # 🚀 DEPLOYMENT TASKS
+  # ==============================================================================
+
+  deploy:
+    desc: "Deploy the EKS cluster infrastructure"
+    cmds:
+      - terraform init
+      - terraform plan
+      - |
+        echo "Press Enter to continue with apply or Ctrl+C to cancel..."
+        read
+      - terraform apply
+      - task: update-kubeconfig
+
+  plan:
+    desc: "Show Terraform deployment plan"
+    cmds:
+      - terraform plan
+
+  destroy:
+    desc: "Destroy the EKS cluster infrastructure"
+    cmds:
+      - "echo '⚠️ WARNING: This will destroy the entire EKS cluster!' && read -p 'Type yes to confirm: ' confirm && [ \"$confirm\" = \"yes\" ]"
+      - terraform destroy
+
+  update-kubeconfig:
+    desc: "Update kubectl configuration for the EKS cluster"
+    cmds:
+      - aws eks --region {{.REGION}} update-kubeconfig --name {{.CLUSTER_NAME}}
+
+  # ==============================================================================
+  # 🔍 MONITORING & HEALTH CHECKS
+  # ==============================================================================
+
+  health:
+    desc: "Comprehensive cluster health check"
+    cmds:
+      - "echo '🔍 EKS Health Check - '$(date)"
+      - kubectl cluster-info --request-timeout=10s
+      - kubectl get nodes
+      - kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
+      - helm list -A
+      - kubectl get certificates -A
+      - kubectl get ingress -A
+
+  status:
+    desc: "Quick cluster status overview"
+    cmds:
+      - "kubectl get nodes --no-headers | wc -l | xargs echo 'Nodes:'"
+      - "kubectl get pods -A --no-headers | wc -l | xargs echo 'Total Pods:'"
+      - "kubectl get pods -A --no-headers | grep Running | wc -l | xargs echo 'Running:'"
+      - "helm list -A --short | wc -l | xargs echo 'Releases:'"
+
+  events:
+    desc: "Show recent cluster events"
+    cmds:
+      - kubectl get events -A --sort-by='.lastTimestamp' | tail -20
+
+  # ==============================================================================
+  # 🆔 POD IDENTITY & SECURITY
+  # ==============================================================================
+
+  pod-identity:
+    desc: "Check Pod Identity associations and IAM roles"
+    cmds:
+      - kubectl get podidentityassociation -A
+      - aws iam list-roles --query 'Roles[?contains(RoleName, `{{.CLUSTER_NAME}}`) || contains(RoleName, `dev-`)].{Name:RoleName,Arn:Arn}' --output table
+
+  rbac:
+    desc: "Show RBAC configuration"
+    cmds:
+      - kubectl get clusterroles | grep -E "(aws|cert-manager|external-dns|traefik|argocd)"
+      - kubectl get clusterrolebindings | grep -E "(aws|cert-manager|external-dns|traefik|argocd)"
+
+  # ==============================================================================
+  # 🌍 DNS & CERTIFICATES
+  # ==============================================================================
+
+  dns:
+    desc: "Check ExternalDNS status and DNS records"
+    cmds:
+      - kubectl get pods -n kube-system -l app.kubernetes.io/name=external-dns
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=external-dns --tail=10
+      - kubectl get services -A -o json | jq -r '.items[] | select(.metadata.annotations."external-dns.alpha.kubernetes.io/hostname" != null) | "\(.metadata.namespace)\t\(.metadata.name)\t\(.metadata.annotations."external-dns.alpha.kubernetes.io/hostname")"' | column -t
+      - aws route53 list-resource-record-sets --hosted-zone-id {{.HOSTED_ZONE_ID}} --query 'ResourceRecordSets[?contains(Name, `{{.DOMAIN}}`)].{Name:Name,Type:Type}' --output table
+
+  certs:
+    desc: "Check cert-manager and certificate status"
+    cmds:
+      - kubectl get pods -n cert-manager
+      - kubectl get clusterissuer
+      - kubectl get certificates -A
+      - kubectl get certificates -A -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status,EXPIRY:.status.notAfter"
+
+  dns-test:
+    desc: "Test DNS resolution and connectivity"
+    cmds:
+      - kubectl run dns-test-$(date +%s) --image=busybox:1.28 --rm -i --restart=Never --timeout=30s -- nslookup kubernetes.default
+
+  # ==============================================================================
+  # 🛠️ SERVICE-SPECIFIC CHECKS
+  # ==============================================================================
+
+  traefik:
+    desc: "Check Traefik ingress controller status"
+    cmds:
+      - kubectl get pods -n kube-system -l app.kubernetes.io/name=traefik
+      - kubectl get service traefik -n kube-system
+      - kubectl get ingressroute -A
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=traefik --tail=5
+
+  argocd:
+    desc: "Check ArgoCD status and applications"
+    cmds:
+      - kubectl get pods -n argocd
+      - kubectl get applications -n argocd 2>/dev/null || echo "No applications found"
+      - kubectl get service argocd-server -n argocd
+
+  karpenter:
+    desc: "Check Karpenter node provisioner status"
+    cmds:
+      - kubectl get pods -n kube-system -l app.kubernetes.io/name=karpenter
+      - kubectl get nodepool
+      - kubectl get ec2nodeclass
+      - kubectl get events -n kube-system --field-selector involvedObject.name=karpenter --sort-by='.lastTimestamp' | tail -5
+
+  aws-lbc:
+    desc: "Check AWS Load Balancer Controller status"
+    cmds:
+      - kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+      - kubectl get ingress -A
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller --tail=5
+
+  # ==============================================================================
+  # 🔧 ACCESS & PORT FORWARDING
+  # ==============================================================================
+
+  argocd-ui:
+    desc: "Port forward to ArgoCD UI (https://argocd.happycuban-example.dk) or access via https://argocd.happycuban-example.dk"
+    cmds:
+      - "echo '🔄 ArgoCD: https://argocd.happycuban-example.dk (user: admin, password: task argocd-password)'"
+
+  traefik-ui:
+    desc: "Port forward to Traefik Dashboard (https://traefik.happycuban-example.dk/dashboard)"
+    cmds:
+      - "echo '⚡ Traefik Dashboard: https://traefik.happycuban-example.dk/dashboard'"
+
+  argocd-password:
+    desc: "Get ArgoCD admin password"
+    cmds:
+      - "echo -n '🔐 Password: ' && kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d && echo ' (user: admin)'"
+
+  # ==============================================================================
+  # 📊 MONITORING & DIAGNOSTICS
+  # ==============================================================================
+
+  resources:
+    desc: "Show resource utilization"
+    cmds:
+      - kubectl top nodes
+      - kubectl top pods -A --sort-by=memory | head -20
+
+  logs:
+    desc: "Collect debug logs from all services"
+    cmds:
+      - echo "📝 Collecting debug logs..."
+      - mkdir -p debug-logs/$(date +%Y%m%d-%H%M%S)
+      - cd debug-logs/$(date +%Y%m%d-%H%M%S)
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller --tail=100 > aws-lbc.log
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=external-dns --tail=100 > external-dns.log
+      - kubectl logs -n cert-manager -l app=cert-manager --tail=100 > cert-manager.log
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=traefik --tail=100 > traefik.log
+      - kubectl logs -n kube-system -l app.kubernetes.io/name=karpenter --tail=100 > karpenter.log
+      - kubectl get events -A --sort-by='.lastTimestamp' > cluster-events.log
+      - kubectl get pods -A -o wide > pods-status.log
+      - kubectl get nodes -o wide > nodes-status.log
+      - echo "Debug logs collected in:" $(pwd)
+
+  debug:
+    desc: "Run comprehensive diagnostics"
+    cmds:
+      - task: health
+      - echo ""
+      - task: pod-identity
+      - echo ""
+      - task: resources
+
+  # ==============================================================================
+  # 🔄 MAINTENANCE TASKS
+  # ==============================================================================
+
+  upgrade:
+    desc: "Upgrade cluster components"
+    cmds:
+      - echo "🔄 Upgrading cluster components..."
+      - terraform plan -out=upgrade.tfplan
+      - echo "Review the plan above. Press Enter to apply or Ctrl+C to cancel..."
+      - read
+      - terraform apply upgrade.tfplan
+      - rm upgrade.tfplan
+
+  backup:
+    desc: "Backup cluster configuration"
+    cmds:
+      - echo "💾 Backing up cluster configuration..."
+      - mkdir -p backups/$(date +%Y%m%d-%H%M%S)
+      - cd backups/$(date +%Y%m%d-%H%M%S)
+      - kubectl get all -A -o yaml > cluster-resources.yaml
+      - kubectl get applications -n argocd -o yaml > argocd-applications.yaml 2>/dev/null || echo "No ArgoCD applications found"
+      - kubectl get certificates -A -o yaml > certificates.yaml
+      - kubectl get configmaps -A -o yaml > configmaps.yaml
+      - kubectl get secrets -A -o yaml > secrets.yaml
+      - echo "Backup completed in:" $(pwd)
+
+  # ==============================================================================
+  # 📚 HELP & UTILITIES
+  # ==============================================================================
+
+  help:
+    desc: "Show available tasks"
+    cmds:
+      - echo "🚀 EKS Cluster Management Tasks"
+      - echo "==============================="
+      - echo ""
+      - echo "📋 Available tasks:"
+      - task --list
+      - echo ""
+      - echo "💡 Common workflows:"
+      - echo "  task deploy     # Deploy the cluster"
+      - echo "  task health     # Check cluster health"
+      - echo "  task argocd-ui  # Access ArgoCD UI"
+      - echo "  task debug      # Run diagnostics"
+      - echo ""
+      - echo "🔗 Useful commands:"
+      - echo "  task dns        # Check DNS status"
+      - echo "  task certs      # Check certificates"
+      - echo "  task resources  # Check resource usage"
+
+  info:
+    desc: "Show cluster information"
+    cmds:
+      - echo "ℹ️  EKS Cluster Information"
+      - echo "=========================="
+      - echo "Cluster Name - {{.CLUSTER_NAME}}"
+      - echo "Region - {{.REGION}}"
+      - echo "Domain - {{.DOMAIN}}"
+      - echo "Hosted Zone - {{.HOSTED_ZONE_ID}}"
+      - echo ""
+      - echo "🔗 Service URLs"
+      - echo "  ArgoCD UI - https://argocd.happycuban-example.dk (or via port-forward)"
+      - echo "  Traefik Dashboard - https://traefik.happycuban-example.dk/dashboard (port-forward only)"
+      - echo ""
+      - echo "📋 Quick commands:"
+      - echo "  kubectl get nodes"
+      - echo "  kubectl get pods -A"
+      - echo "  helm list -A"
+
+  clean:
+    desc: "Clean up temporary files and failed pods"
+    cmds:
+      - echo "🧹 Cleaning up..."
+      - kubectl delete pods --field-selector=status.phase=Failed -A
+      - kubectl delete pods --field-selector=status.phase=Succeeded -A
+      - rm -rf debug-logs/*/
+      - echo "✅ Cleanup completed"
+
+  # Default task when running just 'task'
+  default:
+    desc: "Show help information"
+    cmds:
+      - task: help

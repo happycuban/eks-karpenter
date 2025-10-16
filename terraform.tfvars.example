@@ -1,0 +1,43 @@
+###############################################################################
+# Example Configuration File
+# 
+# IMPORTANT: This is a template file with example values.
+# Copy this file to `terraform.tfvars` and replace all placeholder values 
+# with your actual AWS and domain configuration before deployment.
+###############################################################################
+
+###############################################################################
+# AWS Configuration
+###############################################################################
+region = "us-west-2"  # Replace with your preferred AWS region
+
+###############################################################################
+# EKS Cluster Configuration
+###############################################################################
+cluster_name = "my-demo-eks-cluster"  # Replace with your desired cluster name
+env          = "demo"                 # Environment name (demo, staging, prod, etc.)
+
+###############################################################################
+# DNS Configuration
+# 
+# Prerequisites:
+# 1. You must own a domain name (e.g., example.com)
+# 2. Create a Route53 hosted zone for your domain in AWS
+# 3. Update your domain's nameservers to point to Route53
+# 4. Replace the values below with your actual domain and hosted zone ID
+###############################################################################
+hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXXX"  # Replace with your Route53 hosted zone ID
+
+###############################################################################
+# Quick Setup Instructions:
+# 
+# 1. Replace 'happycuban-example.dk' throughout all files with your actual domain
+# 2. Update hosted_zone_id with your Route53 zone ID from AWS Console
+# 3. Verify your domain's DNS is delegated to Route53
+# 4. Run: terraform init && terraform plan
+# 5. If plan looks good, run: terraform apply
+# 
+# After deployment, your services will be available at:
+# - ArgoCD: https://argocd.yourdomain.com
+# - Traefik Dashboard: https://traefik.yourdomain.com/dashboard
+###############################################################################

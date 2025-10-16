@@ -1,0 +1,21 @@
+---
+configs:
+  params:
+    server.insecure: true
+  cmd:
+    server.additional.args:
+      - --insecure
+
+server:
+  # Use ClusterIP since we're using Traefik IngressRoute
+  service:
+    type: ClusterIP
+  
+  # Configure ArgoCD to work behind Traefik proxy
+  config:
+    url: https://argocd.happycuban-example.dk  # Replace with your domain
+    application.instanceLabelKey: argocd.argoproj.io/instance
+  
+  # Additional server configuration for proxy
+  extraArgs:
+    - --insecure

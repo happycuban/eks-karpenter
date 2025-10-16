@@ -1,0 +1,114 @@
+# helm install traefik traefik/traefik --namespace=kube-system --values=traefik-values.yaml
+additionalArguments:
+  - --serversTransport.insecureSkipVerify=true
+
+deployment:
+  enabled: true
+  replicas: 2
+
+metrics:
+  prometheus:
+    service:
+      enabled: true
+    disableAPICheck: false
+#    serviceMonitor:
+#      enabled: true
+
+# Configure ports
+ports:
+  traefik:
+    port: 9000
+    exposedPort: 9000
+    protocol: TCP
+  web:
+    port: 8000
+    expose:
+      default: true
+    exposedPort: 80
+    protocol: TCP
+  websecure:
+    port: 8443
+    expose:
+      default: true
+    exposedPort: 443
+    protocol: TCP
+    tls:
+      enabled: true
+      options: ""
+      certResolver: ""
+      domains: []
+  # rabbitmq:
+  #   port: 5672
+  #   protocol: TCP
+  #   expose: 
+  #     default: true
+  # elastic:
+  #   port: 9200
+  #   protocol: TCP
+  #   expose: 
+  #     default: true
+  metrics:
+    port: 9100
+    expose:
+      default: false
+    exposedPort: 9100
+    protocol: TCP
+
+ingressRoute:
+  dashboard:
+    enabled: false
+
+ingressClass:
+  enabled: true
+  # keep traefik for external services from becoming the default when no ingressClass is specified
+  isDefaultClass: true
+
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowExternalNameServices: true
+    allowCrossNamespace: false
+    namespaces: []
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true
+    allowCrossNamespace: false
+    namespaces: []
+    publishedService:
+      enabled: true
+
+dashboard:
+  enabled: true
+
+rbac:
+  enabled: true
+
+service:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    #service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "9000"
+    service.beta.kubernetes.io/aws-load-balancer-attributes: "load_balancing.cross_zone.enabled=true"
+    # ExternalDNS annotations to automatically create DNS records
+    external-dns.alpha.kubernetes.io/hostname: "*.happycuban-example.dk"  # Replace with your domain  
+#   service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443, 9000"
+#   service.beta.kubernetes.io/load-balancer-source-ranges: 0.0.0.0/0
+#   #service.beta.kubernetes.io/aws-load-balancer-ssl-cert: <YOUR_CERTIFICATE_ARN>
+#   service.beta.kubernetes.io/aws-load-balancer-access-log-enabled: "true"
+
+# THIS IS APPLIED VIA TERRAFORM
+# tlsStore:
+#   default:
+#     defaultCertificate:
+#       secretName: wildcard-happycuban-cert
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
