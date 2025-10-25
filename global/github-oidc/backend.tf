@@ -3,8 +3,8 @@ terraform {
 
   backend "s3" {
     region       = "eu-central-1"
-    bucket       = "github-terraform-state-2025"
-    key          = "global/terraform.tfstate"
+    bucket       = "terraform-state-2025"
+    key          = "global/github-oidc/terraform.tfstate"
     use_lockfile = true
     encrypt      = true
   }

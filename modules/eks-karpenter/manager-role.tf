@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 resource "aws_iam_role" "eks_admin" {
   name = "eks-admin"
 
@@ -11,7 +9,10 @@ resource "aws_iam_role" "eks_admin" {
       "Effect": "Allow",
       "Action": "sts:AssumeRole",
       "Principal": {
-        "AWS": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        "AWS": [
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+          "${data.aws_caller_identity.current.arn}"
+        ]
       }
     }
   ]

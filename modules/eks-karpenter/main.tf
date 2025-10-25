@@ -152,7 +152,7 @@ module "eks" {
   access_entries = {
     # Ensure personal account always has cluster admin access regardless of who runs Terraform
     cluster_creator = {
-      principal_arn = "arn:aws:iam::123456789012:user/myuser"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-admin"
       type          = "STANDARD"
       policy_associations = {
         admin = {
@@ -165,7 +165,7 @@ module "eks" {
     }
     # Grant GitHub Actions OIDC role deployment access
     github-actions = {
-      principal_arn = "arn:aws:iam::123456789012:role/github-actions"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/github-actions"
       type          = "STANDARD"
       policy_associations = {
         edit = {

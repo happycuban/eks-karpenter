@@ -6,10 +6,11 @@
 
 ## 📋 Quick Start Checklist
 
-1. **🔧 Configure Variables**: Copy `.tfvars.example` files and customize with your values
-2. **🌐 Domain Setup**: Configure your domain in `terraform.tfvars`
-3. **☁️ AWS Setup**: Configure Route53 hosted zone and update terraform variables
-4. **🚀 EKS Deployment**: Run deployment commands from environment directories
+1. **�️ Create S3 Bucket**: Run `global/create-bucket` to create Terraform state bucket FIRST
+2. **�🔧 Configure Variables**: Copy `.tfvars.example` files and customize with your values
+3. **🌐 Domain Setup**: Configure your domain in `terraform.tfvars`
+4. **☁️ AWS Setup**: Configure Route53 hosted zone and update terraform variables
+5. **🚀 EKS Deployment**: Run deployment commands from environment directories
 
 ## 📖 Table of Contents
 
@@ -167,9 +168,14 @@ eks-karpenter/
 │   │   ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
 │   │   ├── variables.tf         # Variable definitions
 │   │   ├── main.tf             # Main Terraform configuration
+│   │   ├── outputs.tf          # Output values
 │   │   └── backend.tf          # S3 backend configuration
 │   └── pro/                     # Production environment
-│       └── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+│       ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+│       ├── variables.tf         # Variable definitions
+│       ├── main.tf             # Main Terraform configuration
+│       ├── outputs.tf          # Output values
+│       └── backend.tf          # S3 backend configuration
 ├── modules/                     # Reusable Terraform modules
 │   ├── aws_iam/                 # IAM roles and policies
 │   ├── aws_organizations/       # AWS Organizations setup
@@ -181,9 +187,26 @@ eks-karpenter/
 │   ├── kms-key/                # KMS encryption keys
 │   └── s3/                     # S3 buckets and policies
 ├── global/                     # Global/shared resources
-│   └── github-oidc/            # GitHub OIDC provider setup
-│       └── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+│   ├── create-bucket/          # 🚨 S3 state bucket creation (RUN FIRST)
+│   │   ├── main.tf             # Bucket creation configuration
+│   │   ├── variables.tf        # Bucket variables
+│   │   ├── outputs.tf          # Bucket outputs
+│   │   └── terraform.tfvars.example # Example bucket config (COPY & CUSTOMIZE)
+│   ├── repos-ecr/              # 📦 ECR container registries (OPTIONAL)
+│   │   ├── main.tf             # ECR repository configuration
+│   │   ├── variables.tf        # ECR variables
+│   │   ├── outputs.tf          # ECR outputs  
+│   │   ├── backend.tf          # S3 backend configuration
+│   │   └── terraform.tfvars.example # Example ECR config (COPY & CUSTOMIZE)
+│   └── github-oidc/            # GitHub OIDC provider setup (OPTIONAL)
+│       ├── main.tf             # OIDC provider configuration
+│       ├── variables.tf        # OIDC variables
+│       ├── outputs.tf          # OIDC outputs
+│       ├── backend.tf          # S3 backend configuration
+│       └── terraform.tfvars.example # Example OIDC config (COPY & CUSTOMIZE)
 └── k8s-argo-apps/             # Kubernetes ArgoCD applications
+    ├── application.yaml        # ArgoCD application manifests
+    └── stateful-app.yaml      # Example stateful application
 ```
 
 ---
@@ -210,43 +233,6 @@ task --version         # Taskfile (optional but recommended)
 - `hashicorp/kubernetes`
 - `hashicorp/helm`
 - `alekc/kubectl`
-
----
-
-## 🌐 Services & Components
-
-After successful deployment, the following services will be available:
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **ArgoCD** | `https://argocd.happycuban-example.dk` | GitOps deployment management |
-| **Traefik Dashboard** | `https://traefik.happycuban-example.dk` | Load balancer and routing status |
-| **Your Apps** | `https://app-name.happycuban-example.dk` | Your deployed applications |
-
-### 🔐 Default Credentials
-
-```bash
-# ArgoCD Admin Password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-
-# Username: admin
-# Password: (output from above command)
-```
-
-### 📊 Monitoring & Health Checks
-
-```bash
-# Cluster health
-kubectl get nodes
-kubectl get pods --all-namespaces
-
-# Karpenter status
-kubectl get deployment -n karpenter
-kubectl logs -f -n karpenter deployment/karpenter
-
-# ArgoCD applications
-kubectl get applications -n argocd
-```
 
 ---
 
@@ -320,13 +306,40 @@ additional_allowed_ips = [
 
 ## 🚀 Deployment
 
-> **ℹ️ NOTE**: S3 buckets for Terraform state will be created automatically during deployment. 
+> **🚨 PREREQUISITE**: You MUST create the S3 bucket first using [`global/create-bucket`](global/create-bucket/) before any environment deployment. This bucket stores Terraform state for all environments. See detailed instructions: [`global/create-bucket/README.md`](global/create-bucket/README.md)
 
 > **🔗 OPTIONAL CI/CD**: If you want to use GitHub Actions for CI/CD:
-> 1. Deploy the GitHub OIDC provider first - see [`global/README.md`](global/README.md)
+> 1. Deploy the GitHub OIDC provider first - see [`global/github-oidc/README.md`](global/github-oidc/README.md)
 > 2. Configure the GitHub Actions workflow - see [`.github/workflows/eks-terraform.yml.example`](.github/workflows/eks-terraform.yml.example)
 
-### Option 1: Using Taskfile (Recommended)
+> **📦 OPTIONAL ECR**: If you want AWS container registries for your Docker images:
+> - Deploy ECR repositories - see [`global/repos-ecr/README.md`](global/repos-ecr/README.md)
+
+### 🚨 STEP 0: Create S3 Bucket (REQUIRED FIRST)
+
+> **⚠️ CRITICAL**: This step MUST be completed before any other deployment steps. All environments depend on this bucket for Terraform state storage.
+
+```bash
+# Navigate to bucket creation directory
+cd global/create-bucket
+
+# Copy and customize configuration
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your unique bucket name and region
+
+# Create the S3 bucket (this is the foundation for all other deployments)
+terraform init
+terraform plan
+terraform apply
+
+# ⚠️ IMPORTANT: Update backend.tf files in ALL environments with your actual bucket name
+# Replace "terraform-state-2025" with your bucket name in:
+# - environments/dev/backend.tf
+# - environments/pro/backend.tf
+# - global/github-oidc/backend.tf (if using CI/CD)
+```
+
+### Option 1: Using Taskfile
 
 ```bash
 # Install Taskfile (if not already installed)
@@ -353,7 +366,7 @@ task argocd-ui ENV=dev        # ArgoCD UI
 task argocd-password ENV=dev  # Get ArgoCD password
 ```
 
-### Option 2: Manual Terraform Commands
+### Option 2: Manual Terraform Commands (Recommended)
 
 ```bash
 # Navigate to environment directory
@@ -385,6 +398,43 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 # Monitor Karpenter scaling
 kubectl logs -f -n karpenter deployment/karpenter
+```
+
+---
+
+## 🌐 Services & Components
+
+After successful deployment, the following services will be available:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **ArgoCD** | `https://argocd.happycuban-example.dk` | GitOps deployment management |
+| **Traefik Dashboard** | `https://traefik.happycuban-example.dk` | Load balancer and routing status |
+| **Your Apps** | `https://app-name.happycuban-example.dk` | Your deployed applications |
+
+### 🔐 Default Credentials
+
+```bash
+# ArgoCD Admin Password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+# Username: admin
+# Password: (output from above command)
+```
+
+### 📊 Monitoring & Health Checks
+
+```bash
+# Cluster health
+kubectl get nodes
+kubectl get pods --all-namespaces
+
+# Karpenter status
+kubectl get deployment -n karpenter
+kubectl logs -f -n karpenter deployment/karpenter
+
+# ArgoCD applications
+kubectl get applications -n argocd
 ```
 
 ---

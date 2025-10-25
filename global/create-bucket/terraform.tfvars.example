@@ -15,11 +15,3 @@ region = "eu-central-1"  # Replace with your preferred AWS region
 # S3 Backend Configuration
 ###############################################################################
 bucket = "terraform-state-2025"  # Replace the S3 bucket name
-
-###############################################################################
-# GitHub OIDC Integration
-###############################################################################
-github_repos = [
-  "your-apps-repository",
-  "your-infrastructure-repository"
-]
