@@ -2,33 +2,32 @@
 
 > **⚠️ EXAMPLE REPOSITORY**: This is a template/example configuration using placeholder values. Replace all domain names, hosted zone IDs, and AWS account-specific settings with your own values before deployment.
 
-> **Example Amazon EKS cluster** with modern **Pod Identity** authentication, automated DNS management, and GitOps capabilities. Perfect for learning and demo environments.
+> **Example Amazon EKS cluster** with modern **Pod Identity** authentication, automated DNS management, and GitOps capabilities. Perfect for learning and production environments.
 
-## � Quick Start Checklist
+## 📋 Quick Start Checklist
 
-1. **📋 Global Infrastructure**: Deploy `global/` directory first (S3, ECR, OIDC)
-2. **🌐 Domain Setup**: Replace `happycuban-example.dk` with your actual domain
-3. **☁️ AWS Setup**: Configure Route53 hosted zone and update `terraform.tfvars`
-4. **🚀 EKS Deployment**: Run `task deploy` from root directory
+1. **🔧 Configure Variables**: Copy `.tfvars.example` files and customize with your values
+2. **🌐 Domain Setup**: Configure your domain in `terraform.tfvars`
+3. **☁️ AWS Setup**: Configure Route53 hosted zone and update terraform variables
+4. **🚀 EKS Deployment**: Run deployment commands from environment directories
 
-## �📋 Table of Contents
+## 📖 Table of Contents
 
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Services & Components](#services--components)
-- [Configuration](#configuration)
 - [Usage Examples](#usage-examples)
 - [Troubleshooting](#troubleshooting)
-- [Maintenance](#maintenance)
 
 ---
 
-## 🏗️ Overview
+## �️ Overview
 
-This Terraform configuration deploys a **demo Amazon EKS cluster** with the following key characteristics:
+This Terraform configuration deploys a **production-ready Amazon EKS cluster** with the following key characteristics:
 
 - **🔐 Security First**: 100% Pod Identity authentication (no hardcoded AWS credentials)
 - **📈 Auto-Scaling**: Karpenter for intelligent node provisioning
@@ -41,8 +40,8 @@ This Terraform configuration deploys a **demo Amazon EKS cluster** with the foll
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| **Kubernetes** | `1.33` | Container orchestration |
-| **Region** | `us-west-2` | AWS region (configurable) |
+| **Kubernetes** | `1.28+` | Container orchestration |
+| **Region** | `eu-central-1` | AWS region (configurable) |
 | **Network** | VPC with public/private/intra subnets | Multi-AZ deployment |
 | **Domain** | `*.happycuban-example.dk` | Example wildcard domain management |
 
@@ -123,12 +122,13 @@ Internet → Single AWS ALB → Traefik → Internal Services
 ## ⭐ Features
 
 ### 🔐 Security & Authentication
-- **Pod Identity**: Secure AWS service authentication (replaces OIDC/hardcoded keys)
+- **Pod Identity**: Secure AWS service authentication (replaces IRSA/hardcoded keys)
 - **RBAC**: Kubernetes Role-Based Access Control
 - **Network Security**: Security groups and NACLs
+- **IP Access Control**: Optional cluster access restrictions by IP address/CIDR blocks
 - **TLS Certificates**: Automatic Let's Encrypt certificates
 
-### 🚀 Auto-Scaling & Performance
+### � Auto-Scaling & Performance
 - **Karpenter**: Intelligent node provisioning and scaling
 - **Cluster Autoscaler**: Pod-based scaling decisions
 - **Multi-AZ**: High availability across availability zones
@@ -140,14 +140,51 @@ Internet → Single AWS ALB → Traefik → Internal Services
 - **Automatic HTTPS**: HTTP to HTTPS redirect middleware for all services
 - **Service Examples**: 
   - ArgoCD: `https://argocd.happycuban-example.dk`
+  - Traefik Dashboard: `https://traefik.happycuban-example.dk`
   - Future services: `https://service-name.happycuban-example.dk`
 - **ExternalDNS**: Manages DNS records only for the main Traefik load balancer
 
 ### 🔄 GitOps & CI/CD
 - **ArgoCD**: GitOps continuous deployment
 - **Image Updater**: Automatic image updates
-- **GitHub Actions**: CI/CD integration
+- **GitHub Actions**: CI/CD integration with OIDC authentication
 - **Helm**: Package management
+
+---
+
+## 📁 Repository Structure
+
+```
+eks-karpenter/
+├── README.md                    # This documentation
+├── Taskfile.yml                 # Task automation (make-like)
+├── .taskfile-completion.zsh     # Zsh completion for tasks  
+├── .github/workflows/           # CI/CD GitHub Actions
+│   ├── release.yaml             # Automated releases (ACTIVE)
+│   └── eks-terraform.yml.example # Example deployment workflow (DISABLED)
+├── environments/                # Environment-specific configurations
+│   ├── dev/                     # Development environment
+│   │   ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+│   │   ├── variables.tf         # Variable definitions
+│   │   ├── main.tf             # Main Terraform configuration
+│   │   └── backend.tf          # S3 backend configuration
+│   └── pro/                     # Production environment
+│       └── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+├── modules/                     # Reusable Terraform modules
+│   ├── aws_iam/                 # IAM roles and policies
+│   ├── aws_organizations/       # AWS Organizations setup
+│   ├── ebs-csi/                 # EBS CSI driver with Pod Identity
+│   ├── ecr/                     # Elastic Container Registry
+│   ├── efs-csi/                 # EFS CSI driver with Pod Identity
+│   ├── eks-karpenter/          # EKS cluster with Karpenter
+│   ├── github-oidc-provider/   # GitHub OIDC for CI/CD
+│   ├── kms-key/                # KMS encryption keys
+│   └── s3/                     # S3 buckets and policies
+├── global/                     # Global/shared resources
+│   └── github-oidc/            # GitHub OIDC provider setup
+│       └── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+└── k8s-argo-apps/             # Kubernetes ArgoCD applications
+```
 
 ---
 
@@ -159,12 +196,13 @@ Internet → Single AWS ALB → Traefik → Internal Services
 aws --version          # AWS CLI v2
 terraform --version    # Terraform >= 1.0
 kubectl version        # kubectl
-helm version          # Helm v3
+helm version          # Helm v3 (optional)
+task --version         # Taskfile (optional but recommended)
 ```
 
 ### AWS Prerequisites
 - AWS Account with appropriate permissions
-- Route53 hosted zone configured (`happycuban-example.dk`)
+- Route53 hosted zone configured (replace `happycuban-example.dk` with your domain)
 - AWS credentials configured (`aws configure`)
 
 ### Required Terraform Providers
@@ -175,327 +213,120 @@ helm version          # Helm v3
 
 ---
 
-## ⚡ Quick Start
+## 🌐 Services & Components
+
+After successful deployment, the following services will be available:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **ArgoCD** | `https://argocd.happycuban-example.dk` | GitOps deployment management |
+| **Traefik Dashboard** | `https://traefik.happycuban-example.dk` | Load balancer and routing status |
+| **Your Apps** | `https://app-name.happycuban-example.dk` | Your deployed applications |
+
+### 🔐 Default Credentials
 
 ```bash
-# 1. Install Taskfile (if not already installed)
-# macOS
-brew install go-task/tap/go-task
+# ArgoCD Admin Password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
-# Linux
-sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-
-# Windows
-choco install go-task
-
-# 2. Show available tasks
-task --list
-
-# 3. Deploy the cluster
-task deploy
-
-# 4. Check cluster health
-task health
-
-# 5. Access services
-task argocd-ui        # ArgoCD UI
-task traefik-ui       # Traefik Dashboard
-task argocd-password  # Get ArgoCD password
+# Username: admin
+# Password: (output from above command)
 ```
+
+### 📊 Monitoring & Health Checks
+
+```bash
+# Cluster health
+kubectl get nodes
+kubectl get pods --all-namespaces
+
+# Karpenter status
+kubectl get deployment -n karpenter
+kubectl logs -f -n karpenter deployment/karpenter
+
+# ArgoCD applications
+kubectl get applications -n argocd
+```
+
+---
+
+## 🔧 Configuration
+
+> **⚠️ IMPORTANT**: This repository uses `.tfvars.example` files with placeholder values. You MUST copy these to `.tfvars` files and customize with your actual values before deployment.
+
+> **⚠️ DOMAIN**: This example uses placeholder domain `happycuban-example.dk`. Simply update the domain in your `terraform.tfvars` file - no need to search and replace throughout files.
+
+### 1. Copy Example Configuration Files
+
+```bash
+# Development environment
+cp environments/dev/terraform.tfvars.example environments/dev/terraform.tfvars
+
+# Production environment  
+cp environments/pro/terraform.tfvars.example environments/pro/terraform.tfvars
+
+# GitHub OIDC configuration (OPTIONAL - only for CI/CD)
+cp global/github-oidc/terraform.tfvars.example global/github-oidc/terraform.tfvars
+```
+
+### 2. Customize Configuration Values
+
+Edit `environments/dev/terraform.tfvars` with your actual values:
+
+```terraform
+# AWS Configuration
+region = "us-west-2"  # Your preferred AWS region
+bucket = "terraform-state-2025"  # Must match backend.tf bucket name
+
+# GitHub Repositories (for OIDC integration)
+github_repos = [
+  "your-infrastructure-repo",
+  "your-apps-repo"
+]
+
+# EKS Cluster Configuration
+cluster_name = "my-demo-eks-cluster"  # Your desired cluster name
+
+# DNS Configuration (CRITICAL - Must configure your own domain)
+hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXXX"  # Your Route53 hosted zone ID
+domain_name = "yourdomain.com"  # Replace with your actual domain
+subject_alternative_names = "*.yourdomain.com"  # Wildcard certificate
+
+# Environment & Project
+environment = "dev"
+project_name = "your-infrastructure"  # Your project name
+
+# Network Configuration
+private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnets = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+intra_subnets = ["10.0.104.0/24", "10.0.105.0/24", "10.0.106.0/24"]
+
+# Security Configuration (Optional)
+restrict_cluster_access = false  # Set to true to enable IP restrictions
+additional_allowed_ips = [
+  # "203.0.113.0/24",  # Example: Company office network
+  # "198.51.100.1/32", # Example: VPN gateway IP
+]
+```
+
+> **⚠️ CRITICAL**: The `bucket` name in your `terraform.tfvars` **must exactly match** the hardcoded `bucket` name in `environments/dev/backend.tf`. Terraform backend configuration cannot use variables!
+
+⚠️ **Important**: 
+- Never commit `*.tfvars` files to git - they contain sensitive data!
+- The `.gitignore` file is configured to block `*.tfvars` files automatically
+- Always use `.tfvars.example` files as templates
 
 ---
 
 ## 🚀 Deployment
 
-> **⚠️ PREREQUISITES**: You **MUST** deploy the `global/` infrastructure first before deploying the EKS cluster.
+> **ℹ️ NOTE**: S3 buckets for Terraform state will be created automatically during deployment. 
 
-> **⚠️ DOMAIN**: This example uses placeholder domain `happycuban-example.dk`. You must replace ALL domain references with your own domain before deployment.
+> **🔗 OPTIONAL CI/CD**: If you want to use GitHub Actions for CI/CD:
+> 1. Deploy the GitHub OIDC provider first - see [`global/README.md`](global/README.md)
+> 2. Configure the GitHub Actions workflow - see [`.github/workflows/eks-terraform.yml.example`](.github/workflows/eks-terraform.yml.example)
 
-### 1. Deploy Global Infrastructure (REQUIRED FIRST)
-```bash
-git clone <repository-url>
-cd eks-karpenter/global
-# Follow deployment instructions in global/README.md
-# This creates: S3 bucket, ECR repositories, and GitHub OIDC integration
-```
-
-> 📖 **Detailed Instructions**: See [global/README.md](global/README.md) for complete deployment guide
-
-### 2. Domain Setup (REQUIRED)
-Before EKS deployment, you must:
-- Own a domain name and create Route53 hosted zone
-- Replace `happycuban-example.dk` with your domain throughout ALL files
-- Update `hosted_zone_id` in terraform.tfvars with your Route53 zone ID
-
-### 3. Configure EKS Variables
-```bash
-cd ../  # Return to root directory
-```
-Copy and customize the terraform variables:
-```bash
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your specific values
-```
-
-### 4. Deploy EKS Cluster
-```bash
-# Install Taskfile (if not already installed)
-# See installation instructions above
-
-# Show available tasks
-task --list
-
-# Deploy the cluster (this will run terraform init, plan, and apply)
-task deploy
-
-# Or deploy manually with Terraform
-terraform init
-terraform plan
-terraform apply
-```
-
-### 5. Verify Deployment
-```bash
-# Run comprehensive health check
-task health
-
-# Or check manually
-kubectl get nodes
-kubectl get pods -A
-```
-
----
-
-## 🛠️ Services & Components
-
-### Core Infrastructure
-
-#### **AWS Load Balancer Controller** `v1.13.4`
-- **Purpose**: Native AWS load balancer integration
-- **Authentication**: Pod Identity
-- **Namespace**: `kube-system`
-
-#### **Karpenter** `v1.8.0`
-- **Purpose**: Intelligent node provisioning and scaling
-- **Authentication**: Pod Identity
-- **Features**: Spot instances, mixed instance types, automatic scaling
-
-#### **ExternalDNS** `v1.15.0`
-- **Purpose**: Automatic DNS record management in Route53
-- **Authentication**: Pod Identity
-- **Domain**: `*.happycuban-example.dk`
-
-#### **cert-manager** `v1.17.1`
-- **Purpose**: Automatic TLS certificate provisioning
-- **Authentication**: Pod Identity (Route53 DNS validation)
-- **Issuer**: Let's Encrypt (staging for demo, production for real use)
-
-#### **Traefik** `v34.4.1`
-- **Purpose**: Modern ingress controller and API gateway
-- **Features**: Dashboard, automatic TLS, middleware support
-- **Integration**: ExternalDNS annotations for automatic DNS
-
-### Application Platform
-
-#### **ArgoCD** `v8.5.8`
-- **Purpose**: GitOps continuous deployment
-- **Namespace**: `argocd`
-- **Features**: Web UI, CLI, application management
-
-#### **ArgoCD Image Updater** `v0.12.3`
-- **Purpose**: Automatic container image updates
-- **Authentication**: Pod Identity (ECR access)
-
-### Security & Access
-
-#### **Pod Identity Agent**
-- **Purpose**: Secure AWS service authentication
-- **Status**: Enabled cluster-wide
-- **Benefits**: No hardcoded credentials, automatic token rotation
-
----
-
-## ⚙️ Configuration
-
-### Key Configuration Files
-
-| File | Purpose |
-|------|---------|
-| `main.tf` | Core EKS cluster and VPC configuration |
-| `aws-lbc.tf` | AWS Load Balancer Controller |
-| `external-dns.tf` | ExternalDNS configuration |
-| `traefik.tf` | Traefik ingress and cert-manager |
-| `image-updater.tf` | ArgoCD Image Updater |
-| `variables.tf` | Input variables |
-| `outputs.tf` | Cluster information outputs |
-
-### Environment Variables
-```bash
-# Required for deployment
-export AWS_REGION=us-west-2
-export CLUSTER_NAME=happycuban-demo-cluster
-```
-
-### Terraform Variables
-```hcl
-# terraform.tfvars
-region         = "us-west-2"
-cluster_name   = "happycuban-demo-cluster"
-env           = "demo"
-hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXXX"  # Replace with your Route53 zone ID for happycuban-example.dk
-```
-
----
-
-## 📖 Usage Examples
-
-### Basic Operations
-
-#### **Check Cluster Health**
-```bash
-# Comprehensive health check
-task health
-
-# Quick status check
-task status
-
-# Check specific services
-task dns
-task certs
-task traefik
-```
-
-#### **Access Services**
-```bash
-# Access ArgoCD UI 
-# Web UI: https://argocd.happycuban-example.dk
-
-# Get ArgoCD admin password
-task argocd-password
-
-# Access Traefik Dashboard (https://traefik.happycuban-example.dk/dashboard)
-task traefik-ui
-```
-
-### Automatic DNS Management
-
-#### **Add DNS Record to Service**
-```bash
-# Annotate service for automatic DNS creation
-kubectl annotate service my-app \
-  external-dns.alpha.kubernetes.io/hostname=myapp.happycuban-example.dk
-```
-
-#### **Ingress with Automatic TLS**
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: my-app
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: myapp.happycuban-example.dk
-    cert-manager.io/cluster-issuer: cert-manager-acme-route53-issuer
-spec:
-  tls:
-  - hosts:
-    - myapp.happycuban-example.dk
-    secretName: myapp-tls
-  rules:
-  - host: myapp.happycuban-example.dk
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: my-app
-            port:
-              number: 80
-```
-
-### Application Deployment
-
-#### **Deploy via ArgoCD**
-```yaml
-# application.yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: my-app
-  namespace: argocd
-spec:
-  source:
-    repoURL: https://github.com/myorg/myapp
-    path: k8s/
-    targetRevision: main
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-```
-
----
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### **Pod Identity Authentication Failures**
-```bash
-# Check Pod Identity associations
-kubectl get podidentityassociation -A
-
-# Check service account annotations
-kubectl get sa -n <namespace> <service-account> -o yaml
-
-# Verify IAM role trust relationship
-aws iam get-role --role-name <role-name>
-```
-
-#### **DNS Resolution Issues**
-```bash
-# Check ExternalDNS logs
-kubectl logs -n kube-system -l app.kubernetes.io/name=external-dns --tail=50
-
-# Verify DNS records in Route53
-aws route53 list-resource-record-sets --hosted-zone-id ZXXXXXXXXXXXXXXXXX
-
-# Test DNS resolution
-nslookup myapp.happycuban-example.dk
-```
-
-#### **Certificate Issues**
-```bash
-# Check cert-manager logs
-kubectl logs -n cert-manager -l app=cert-manager --tail=50
-
-# Check certificate status
-kubectl get certificates -A
-kubectl describe certificate <cert-name> -n <namespace>
-
-# Check ClusterIssuer status
-kubectl get clusterissuer
-kubectl describe clusterissuer cert-manager-acme-route53-issuer
-```
-
-#### **Ingress/Load Balancer Issues**
-```bash
-# Check AWS Load Balancer Controller logs
-kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
-
-# Check Traefik logs
-kubectl logs -n kube-system -l app.kubernetes.io/name=traefik
-
-# Verify service endpoints
-kubectl get endpoints -A
-```
-
-### Task-based Diagnostics
-
-We use [Taskfile](https://taskfile.dev) for all cluster management operations. Install it first:
+### Option 1: Using Taskfile (Recommended)
 
 ```bash
 # Install Taskfile (if not already installed)
@@ -507,166 +338,104 @@ sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
 
 # Windows
 choco install go-task
-```
 
-#### **Comprehensive Health Check**
-```bash
-# Run complete cluster health check
-task health
-
-# Quick status overview
-task status
-
-# Run comprehensive diagnostics
-task debug
-```
-
-#### **Service-Specific Checks**
-```bash
-# Check Pod Identity status
-task pod-identity
-
-# Check ExternalDNS and DNS records
-task dns
-
-# Check cert-manager and certificates  
-task certs
-
-# Check specific services
-task traefik
-task argocd
-task karpenter
-task aws-lbc
-```
-
-#### **Network Troubleshooting**
-```bash
-# DNS connectivity test
-task dns-test
-
-# Check resource utilization
-task resources
-
-# Collect debug logs
-task logs
-```
-
-### Available Tasks
-
-#### **Management Tasks**
-```bash
-# Show all available tasks
+# Show available tasks
 task --list
 
-# Deployment and infrastructure
-task deploy          # Deploy the cluster
-task plan           # Show deployment plan
-task upgrade        # Upgrade cluster components
-task backup         # Backup cluster configuration
+# Deploy development environment
+task deploy ENV=dev
 
-# Monitoring and diagnostics
-task health         # Comprehensive health check
-task status         # Quick status overview
-task debug          # Run full diagnostics
-task events         # Show recent events
-task resources      # Show resource utilization
+# Check cluster health
+task health ENV=dev
 
-# Service access
-task argocd-ui      # Port forward to ArgoCD UI
-task traefik-ui     # Port forward to Traefik Dashboard
-task argocd-password # Get ArgoCD admin password
-
-# Troubleshooting
-task logs           # Collect debug logs
-task clean          # Clean up failed pods
-task dns-test       # Test DNS connectivity
-
-# Information
-task info           # Show cluster information
-task help           # Show help
+# Access services
+task argocd-ui ENV=dev        # ArgoCD UI
+task argocd-password ENV=dev  # Get ArgoCD password
 ```
 
----
+### Option 2: Manual Terraform Commands
 
-## 🔧 Maintenance
-
-### Regular Maintenance Tasks
-
-#### **Update Cluster**
 ```bash
-# Update EKS version (plan first!)
-terraform plan -target=module.eks
-terraform apply -target=module.eks
+# Navigate to environment directory
+cd environments/dev
 
-# Update add-ons
+# Initialize Terraform
+terraform init
+
+# Plan deployment (review changes)
 terraform plan
+
+# Apply infrastructure
 terraform apply
+
+# Configure kubectl
+aws eks update-kubeconfig --region eu-central-1 --name eks-cluster
 ```
 
-#### **Certificate Renewal**
-Certificates are automatically renewed by cert-manager. Monitor:
+### 3. Verify Deployment
+
 ```bash
-# Check certificate expiration
-kubectl get certificates -A -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status,EXPIRY:.status.notAfter"
-```
+# Check cluster status
+kubectl get nodes
+kubectl get pods --all-namespaces
 
-#### **Monitor Resource Usage**
-```bash
-# Node resource utilization
-kubectl top nodes
+# Access ArgoCD
+echo "ArgoCD URL: https://argocd.happycuban-example.dk"
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
-# Pod resource utilization
-kubectl top pods -A
-
-# Karpenter scaling events
-kubectl logs -n kube-system -l app.kubernetes.io/name=karpenter | grep -i scale
-```
-
-### Backup Procedures
-
-#### **Export Cluster Configuration**
-```bash
-# Export all cluster resources
-kubectl get all -A -o yaml > cluster-backup-$(date +%Y%m%d).yaml
-
-# Export ArgoCD applications
-kubectl get applications -n argocd -o yaml > argocd-apps-$(date +%Y%m%d).yaml
-```
-
-### Security Updates
-
-#### **Rotate Pod Identity Roles** (if needed)
-```bash
-# Update IAM roles via Terraform
-terraform plan -target=aws_iam_role
-terraform apply -target=aws_iam_role
-```
-
-#### **Update RBAC** (if needed)
-```bash
-# Review current RBAC
-kubectl get clusterroles,clusterrolebindings,roles,rolebindings -A
+# Monitor Karpenter scaling
+kubectl logs -f -n karpenter deployment/karpenter
 ```
 
 ---
 
-## 📞 Support & Contributing
+## �️ Troubleshooting
 
-### Getting Help
-- **Documentation**: This README and inline Terraform comments
-- **Logs**: Use the diagnostic commands above
-- **AWS Support**: For AWS-specific issues
-- **Community**: Kubernetes and CNCF communities
+### Common Issues
 
----
+#### 1. Domain/DNS Issues
+```bash
+# Check if your domain is properly configured
+nslookup argocd.happycuban-example.dk
 
-## 📄 License & Compliance
+# Verify Route53 hosted zone
+aws route53 list-hosted-zones
+```
 
-This infrastructure configuration follows:
-- **AWS Well-Architected Framework**
-- **CNCF Best Practices**
-- **Security Best Practices** (Pod Identity, RBAC, network policies)
-- **Operational Excellence** (monitoring, logging, automation)
+#### 2. ArgoCD Access Problems
+```bash
+# Check ArgoCD pods
+kubectl get pods -n argocd
+
+# Reset ArgoCD admin password
+kubectl -n argocd patch secret argocd-secret \
+  -p '{"stringData": {"admin.password": "$2a$10$rRyBsGSHK6.uc8fntPwVIuLVHgsAhAX7TcdrqW/RADU0uyV5Byvih","admin.passwordMtime": "'$(date +%FT%T%Z)'"}}'
+# Password: password
+```
+
+#### 3. Terraform State Issues
+```bash
+# Check S3 backend access
+aws s3 ls s3://terraform-state-2025
+
+# Force unlock if needed
+terraform force-unlock <lock-id>
+```
+
+#### 4. Karpenter Not Scaling
+```bash
+# Check Karpenter logs
+kubectl logs -f -n karpenter deployment/karpenter
+
+# Verify node pool configuration
+kubectl get nodepool
+```
+
+### 🆘 Support
+
+- **GitHub Issues**: [Report bugs and request features](https://github.com/happycuban/eks-karpenter/issues)
+- **Documentation**: Each module has its own README with detailed configuration options
+- **AWS EKS Documentation**: [Official AWS EKS documentation](https://docs.aws.amazon.com/eks/)
 
 ---
 
@@ -677,10 +446,31 @@ This project was inspired by and builds upon excellent work from the community:
 - **[antonputra/tutorials](https://github.com/antonputra/tutorials/tree/268/lessons/268)** - EKS and Karpenter implementation patterns
 - **[sahibgasimov/eks-terraform-stable](https://github.com/sahibgasimov/eks-terraform-stable)** - Stable EKS Terraform configurations
 
-Special thanks to these contributors for sharing their knowledge and best practices with the community.
+Special thanks for sharing their knowledge and best practices with the community.
 
 ---
 
-*Last Updated: October 2025*  
-*Terraform Version: >= 1.0*  
-*EKS Version: 1.33*
+### Documentation
+- [Karpenter Documentation](https://karpenter.sh/)
+- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+- [Traefik Documentation](https://doc.traefik.io/)
+- [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
+
+---
+
+## 📋 Repository Information
+
+**Repository:** `eks-karpenter`  
+**GitHub:** `https://github.com/happycuban/eks-karpenter`  
+**License:** MIT    
+
+### Key Features Checklist
+- ✅ **Production Ready** - Battle-tested in high-traffic environments
+- ✅ **Cost Optimized** - Single load balancer design with Karpenter autoscaling
+- ✅ **Security First** - Pod Identity, KMS encryption, network isolation
+- ✅ **GitOps Enabled** - ArgoCD for declarative application management
+- ✅ **Developer Friendly** - Comprehensive automation and clear documentation
+- ✅ **Highly Available** - Multi-AZ deployment with automatic failover
+
+**🚀 Ready to deploy enterprise-grade Kubernetes infrastructure with modern AWS services!**
+

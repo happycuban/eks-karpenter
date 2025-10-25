@@ -1,0 +1,86 @@
+###############################################################################
+# Example Configuration File
+# 
+# IMPORTANT: This is a template file with example values.
+# Copy this file to `terraform.tfvars` and replace all placeholder values 
+# with your actual AWS and domain configuration before deployment.
+###############################################################################
+
+###############################################################################
+# Environment Configuration
+###############################################################################
+region = "us-west-2"  # Replace with your preferred AWS region
+
+###############################################################################
+# S3 Configuration
+###############################################################################
+bucket = "terraform-state-2025"
+
+###############################################################################
+# GitHub OIDC Integration
+###############################################################################
+github_repos = [
+  "your-infrastructure-repo",
+  "your-apps-repo",
+]
+
+###############################################################################
+# EKS Cluster Configuration
+###############################################################################
+cluster_name = "my-demo-eks-cluster"  # Replace with your desired cluster name
+
+###############################################################################
+# DNS Configuration
+# 
+# Prerequisites:
+# 1. You must own a domain name (e.g., example.com)
+# 2. Create a Route53 hosted zone for your domain in AWS
+# 3. Update your domain's nameservers to point to Route53
+# 4. Replace the values below with your actual domain and hosted zone ID
+###############################################################################
+hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXXX"  # Replace with your Route53 hosted zone ID
+domain_name    = "happycuban-example.dk"
+subject_alternative_names  = "*.happycuban-example.dk"
+
+###############################################################################
+# Environment Tags
+###############################################################################
+environment  = "dev"
+project_name = "your-infrastructure"  # Replace with your project name
+
+###############################################################################
+# VPC Subnets
+###############################################################################
+private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+intra_subnets   = ["10.0.104.0/24", "10.0.105.0/24", "10.0.106.0/24"]
+
+###############################################################################
+# Security Configuration
+###############################################################################
+restrict_cluster_access = false  # Disabled for development environment
+additional_allowed_ips = [
+  # "203.0.113.0/24",  # Example: Company office network
+  # "198.51.100.1/32", # Example: VPN gateway IP
+]
+
+###############################################################################
+# DNS Configuration (Domain Settings)
+###############################################################################
+domain_name = "happycuban-example.dk"
+subject_alternative_names = "*.happycuban-example.dk"
+
+###############################################################################
+# Quick Setup Instructions:
+# 
+# 1. Replace 'happycuban-example.dk' throughout all files with your actual domain
+# 2. Update hosted_zone_id with your Route53 zone ID from AWS Console
+# 3. Verify your domain's DNS is delegated to Route53
+# 4. Replace 'terraform-state-2025' with your unique S3 bucket name
+# 5. Run: terraform init && terraform plan
+# 6. If plan looks good, run: terraform apply
+# 
+# After deployment, your services will be available at:
+# - ArgoCD: https://argocd.yourdomain.com
+# - Traefik Dashboard: https://traefik.yourdomain.com/dashboard
+###############################################################################

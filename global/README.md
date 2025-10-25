@@ -1,152 +1,148 @@
-# Global Infrastructure - Deploy First
+# GitHub OIDC Provider - Optional CI/CD Setup
 
-> **⚠️ PREREQUISITES**: This global infrastructure **MUST** be deployed before the EKS cluster. It provides essential services required for EKS deployment and CI/CD operations.
+> **ℹ️ OPTIONAL**: This GitHub OIDC provider setup is only needed if you want to use GitHub Actions for CI/CD deployments. You can skip this and deploy the EKS cluster directly.
 
-This directory contains the foundational infrastructure components that need to be deployed once per AWS account/organization.
+This directory contains the GitHub OpenID Connect (OIDC) provider setup for secure, keyless authentication from GitHub Actions to AWS.
 
 ## 📁 Directory Structure
 
 ```
 global/
-├── s3/             # Terraform state bucket
-├── iam/            # GitHub Actions OIDC and IAM roles
-├── ecr/            # Container registries
-├── global.tfvars   # Configuration variables
-├── state.config    # Backend configuration
-└── COMMANDS.md     # Deployment commands
+└── github-oidc/                    # GitHub OIDC provider setup
+    ├── main.tf                     # OIDC provider configuration
+    ├── variables.tf               # Variable definitions
+    ├── outputs.tf                 # Output values
+    ├── backend.tf                 # S3 backend configuration
+    └── terraform.tfvars.example   # Example variables (COPY & CUSTOMIZE)
 ```
 
 ## 🚀 Quick Setup
 
-> **⚠️ IMPORTANT**: Replace all placeholder values in configuration files before deployment.
+> **ℹ️ IMPORTANT**: This is optional and only needed if you want to use GitHub Actions for CI/CD.
 
 ### 1. Configure Variables
 ```bash
+cd global/github-oidc
+
 # Copy and customize the configuration
-cp global.tfvars.example global.tfvars
-cp state.config.example state.config  # If needed
+cp terraform.tfvars.example terraform.tfvars
 
-# Edit the files with your actual values:
+# Edit with your actual values:
 # - AWS region
-# - S3 bucket name
-# - GitHub repositories
+# - S3 bucket name for Terraform state
+# - GitHub repositories for OIDC access
 ```
-## 🎯 Why Deploy Global First?
 
-The EKS cluster deployment requires:
-- **S3 bucket** for storing Terraform state
-- **ECR repositories** for container images used by workloads
-- **OIDC integration** for GitHub Actions to deploy applications
-
-## 📊 Components
-
-### 1. S3 Bucket (`s3/`) - Foundation
-- 🗄️ Encrypted S3 bucket for Terraform state storage
-- 🔒 Versioning enabled with public access blocked
-- 📍 **Deploy first** - Required for all subsequent deployments
-
-### 2. IAM Roles (`iam/`) - Access Control  
-- 🔐 GitHub Actions OIDC provider and federated access
-- 📦 ECR push/pull permissions for CI/CD
-- 🛡️ Least-privilege IAM policies for deployments
-- 📍 **Deploy after S3** - Needs state bucket
-
-### 3. ECR Repositories (`ecr/`) - Container Registry
-- 🐳 Private container registries for each GitHub repository
-- 🔄 Lifecycle policies for automatic image cleanup
-- 🚀 Ready for EKS workloads and applications
-- 📍 **Deploy after IAM** - Needs OIDC permissions
-
-## 🔧 Configuration Files
-
-### `global.tfvars`
-Main configuration file containing:
-- AWS region
-- S3 bucket name for Terraform state
-- List of GitHub repositories
-
-### `state.config`
-Backend configuration for Terraform state:
-- S3 bucket and region
-- State file encryption
-
-## � Deployment Commands
-
-**IMPORTANT**: Run these commands in the exact order shown:
-
+### 2. Deploy OIDC Provider
 ```bash
-# Step 1: Deploy S3 bucket for Terraform state
-cd global/s3
 terraform init
-terraform apply -var-file=../global.tfvars
-
-# Step 2: Migrate state to S3 backend  
-terraform init -migrate-state -backend-config=../state.config
-
-# Step 3: Deploy IAM roles and OIDC provider
-cd ../iam
-terraform init -backend-config=../state.config
-terraform apply -var-file=../global.tfvars
-
-# Step 4: Deploy ECR repositories
-cd ../ecr
-terraform init -backend-config=../state.config
-terraform apply -var-file=../global.tfvars
-
-# Return to root for EKS deployment
-cd ../../
+terraform plan
+terraform apply
 ```
 
-## �🛡️ Security
+## 🎯 What This Provides
 
-- All Terraform state is encrypted at rest
-- IAM roles use least-privilege principles
-- ECR repositories are private by default
-- GitHub Actions uses OIDC (no long-lived secrets)
+The GitHub OIDC provider enables:
+- **Keyless Authentication**: No AWS credentials stored in GitHub secrets
+- **Secure CI/CD**: GitHub Actions can deploy to AWS using short-lived tokens
+- **Role-Based Access**: Fine-grained permissions for different repositories
 
-## 📝 Deployment Flow
+## � Configuration Files
 
-### Complete the global setup first:
-```bash
-# 1. Deploy foundational infrastructure
-cd global/
-# Follow the deployment steps in COMMANDS.md
+The GitHub OIDC setup uses standard Terraform configuration files:
+
+| File | Purpose | Required |
+|------|---------|----------|
+| `terraform.tfvars.example` | Example variables (copy to `terraform.tfvars`) | ✅ Yes |
+| `terraform.tfvars` | Your actual configuration values | ✅ Yes (create from example) |
+| `main.tf` | GitHub OIDC provider configuration | ✅ Yes (provided) |
+| `variables.tf` | Variable definitions | ✅ Yes (provided) |
+| `backend.tf` | S3 backend for Terraform state | ✅ Yes (provided) |
+| `outputs.tf` | Output values after deployment | ✅ Yes (provided) |
+
+### Example Configuration (`terraform.tfvars`)
+
+```terraform
+# AWS Configuration
+region = "eu-central-1"  # Your AWS region
+bucket = "github-terraform-state-2025"  # Must match backend.tf bucket name
+
+# GitHub Repositories (replace with your actual repos)
+github_repos = [
+  "your-apps-repository",
+  "your-infrastructure-repository"
+]
 ```
 
-### Then deploy EKS cluster:
+> **⚠️ CRITICAL**: The `bucket` name in your `terraform.tfvars` **must exactly match** the hardcoded `bucket` name in `backend.tf`. Terraform backend configuration cannot use variables!
+
+---
+
+## 🚀 Deployment
+
+### Prerequisites
+- AWS CLI configured with appropriate permissions
+- Terraform installed
+
+### Steps
+
 ```bash
-# 2. Deploy EKS cluster (from root directory)
-cd ../
+# Navigate to GitHub OIDC directory
+cd global/github-oidc
+
+# Copy and customize configuration
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your actual values
+
+# Deploy the OIDC provider
 terraform init
+terraform plan
 terraform apply
 ```
 
 ## ✅ What You Get
 
-After deploying global infrastructure:
+After deploying the GitHub OIDC provider:
 
-1. **🔐 OIDC Integration**: GitHub Actions can deploy to AWS securely (no API keys!)
-2. **📦 Container Registry**: ECR repositories ready for your application images
-3. **🗄️ State Management**: Centralized Terraform state storage in S3
-4. **🚀 EKS Ready**: All prerequisites satisfied for EKS cluster deployment
+1. **🔐 Keyless CI/CD**: GitHub Actions can authenticate to AWS without storing credentials
+2. **🛡️ Secure Access**: Short-lived tokens with fine-grained permissions
+3. **📦 Repository Access**: Configured access for your specified GitHub repositories
+4. **🚀 Ready for Automation**: EKS cluster deployments can now use GitHub Actions
+
+## 🔧 Usage with GitHub Actions
+
+After deployment, your GitHub Actions workflows can authenticate like this:
+
+```yaml
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: arn:aws:iam::123456789012:role/github-actions
+    role-session-name: GitHub_to_AWS_via_FederatedOIDC
+    aws-region: eu-central-1
+```
 
 ## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **State bucket doesn't exist**: Deploy `s3/` module first
-2. **Permission denied**: Check IAM role policies and trust relationships
-3. **ECR push fails**: Verify GitHub Actions has correct repository permissions
+1. **S3 backend error**: Verify the bucket name in `terraform.tfvars` matches `backend.tf` (buckets are created automatically)
+2. **Permission denied**: Check AWS credentials have IAM permissions to create OIDC providers and S3 buckets
+3. **GitHub Actions fails**: Verify repository names in `terraform.tfvars` match your actual repos
 
 ### Useful Commands
 
 ```bash
-# Check current state
-terraform show
+# Check OIDC provider
+aws iam list-open-id-connect-providers
 
-# List ECR repositories
-aws ecr describe-repositories
+# Verify role trust policy
+aws iam get-role --role-name github-actions
 
-# Verify IAM role
-aws sts assume-role --role-arn <role-arn> --role-session-name test
+# Test assume role (replace with actual role ARN)
+aws sts assume-role-with-web-identity \
+  --role-arn arn:aws:iam::123456789012:role/github-actions \
+  --role-session-name test \
+  --web-identity-token <github-token>
 ```
+

@@ -1,0 +1,25 @@
+###############################################################################
+# Example Configuration File
+# 
+# IMPORTANT: This is a template file with example values.
+# Copy this file to `terraform.tfvars` and replace all placeholder values 
+# with your actual AWS and GitHub configuration before deployment.
+###############################################################################
+
+###############################################################################
+# AWS Configuration
+###############################################################################
+region = "eu-central-1"  # Replace with your preferred AWS region
+
+###############################################################################
+# S3 Backend Configuration
+###############################################################################
+bucket = "github-terraform-state-2025"  # Replace the S3 bucket name
+
+###############################################################################
+# GitHub OIDC Integration
+###############################################################################
+github_repos = [
+  "your-apps-repository",
+  "your-infrastructure-repository"
+]

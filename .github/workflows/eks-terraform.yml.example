@@ -1,0 +1,101 @@
+# EXAMPLE WORKFLOW - NOT ACTIVE
+# This file is an example of how to set up automated Terraform deployments
+# To use this workflow:
+# 1. Rename this file to eks-terraform.yml
+# 2. Configure the required secrets in your GitHub repository
+# 3. Update the AWS account ID and region as needed
+
+name: Terraform Deploy (EXAMPLE - DISABLED)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'environments/**'
+      - 'modules/**'
+      - '.github/workflows/eks-terraform.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'environments/**'
+      - 'modules/**'
+      - '.github/workflows/eks-terraform.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # required for OIDC
+  contents: read    # required for checkout
+
+env:
+  AWS_REGION: eu-central-1 
+  TF_IN_AUTOMATION: true
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: environments/dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-actions
+          aws-region: eu-central-1
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+  apply:
+    name: Terraform Apply (requires approval)
+    needs: plan
+    runs-on: ubuntu-latest
+    environment:
+      name: production   # configure Environment protections (required reviewers) in GitHub -> Settings -> Environments
+    if: github.event_name != 'pull_request'  # don't apply on PRs
+    defaults:
+      run:
+        working-directory: environments/dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-actions
+          aws-region: eu-central-1
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve

@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.tpl'
+      - '**/*.tf'
+      - '.github/workflows/release.yaml'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Release completed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What was released:" >> $GITHUB_STEP_SUMMARY
+          echo "- Infrastructure modules and configurations" >> $GITHUB_STEP_SUMMARY
+          echo "- Documentation updates" >> $GITHUB_STEP_SUMMARY
+          echo "- Bug fixes and improvements" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Links:" >> $GITHUB_STEP_SUMMARY
+          echo "- [Releases](https://github.com/happycuban/eks-karpenter/releases)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Changelog](https://github.com/happycuban/eks-karpenter/blob/main/CHANGELOG.md)" >> $GITHUB_STEP_SUMMARY
