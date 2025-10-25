@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/happycuban/eks-karpenter/compare/v1.0.0...v1.1.0) (2025-10-25)
+
+
+### Features
+
+* implement dynamic AWS caller identity integration and repository restructure ([686e4b6](https://github.com/happycuban/eks-karpenter/commit/686e4b6f8ef12d9d603d9efcf43baff7e723f473))
+
 # 1.0.0 (2025-10-25)
 
 
