@@ -242,7 +242,15 @@ task --version         # Taskfile (optional but recommended)
 
 > **⚠️ DOMAIN**: This example uses placeholder domain `happycuban-example.dk`. Simply update the domain in your `terraform.tfvars` file.
 
-### 1. Copy Example Configuration Files
+
+
+### 1. 🌐 Configure Route53 Hosted Zone (Step-by-Step)
+
+> **📖 See detailed instructions**: [Route53 Setup Guide](route53_setup.md)
+> **📚 Reference**: [AWS Route53 Configuration Guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/dns-configuring.html)
+
+
+### 2. Copy Example Configuration Files
 
 ```bash
 # Development environment
@@ -254,12 +262,6 @@ cp environments/pro/terraform.tfvars.example environments/pro/terraform.tfvars
 # GitHub OIDC configuration (OPTIONAL - only for CI/CD)
 cp global/github-oidc/terraform.tfvars.example global/github-oidc/terraform.tfvars
 ```
-
-⚠️ **Important**: 
-### 2. 🌐 Configure Route53 Hosted Zone (Step-by-Step)
-
-> **📚 Reference**: [AWS Route53 Configuration Guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/dns-configuring.html)
-
 
 ### 3. Customize Configuration Values
 
