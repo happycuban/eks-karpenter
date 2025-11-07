@@ -6,11 +6,10 @@
 
 ## 📋 Quick Start Checklist
 
-1. **�️ Create S3 Bucket**: Run `global/create-bucket` to create Terraform state bucket FIRST
-2. **�🔧 Configure Variables**: Copy `.tfvars.example` files and customize with your values
-3. **🌐 Domain Setup**: Configure your domain in `terraform.tfvars`
-4. **☁️ AWS Setup**: Configure Route53 hosted zone and update terraform variables
-5. **🚀 EKS Deployment**: Run deployment commands from environment directories
+1. **🪣 Create S3 Bucket**: Run `global/create-bucket` to create Terraform state bucket FIRST
+2. **🌐 Domain & DNS Setup**: Follow [Route53 Setup Guide](route53_setup.md) to configure your domain
+3. **🔧 Configure Variables**: Copy `.tfvars.example` files and customize with your values
+4. **🚀 EKS Deployment**: Run deployment commands from environment directories
 
 ## 📖 Table of Contents
 
@@ -41,8 +40,8 @@ This Terraform configuration deploys a **production-ready Amazon EKS cluster** w
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| **Kubernetes** | `1.28+` | Container orchestration |
-| **Region** | `eu-central-1` | AWS region (configurable) |
+| **Kubernetes** | `1.33+` | Container orchestration |
+| **Region** | `us-west-2` | AWS region (configurable) |
 | **Network** | VPC with public/private/intra subnets | Multi-AZ deployment |
 | **Domain** | `*.happycuban-example.dk` | Example wildcard domain management |
 
@@ -158,55 +157,62 @@ Internet → Single AWS ALB → Traefik → Internal Services
 ```
 eks-karpenter/
 ├── README.md                    # This documentation
+├── CHANGELOG.md                 # Version history and changes
 ├── Taskfile.yml                 # Task automation (make-like)
-├── .taskfile-completion.zsh     # Zsh completion for tasks  
-├── .github/workflows/           # CI/CD GitHub Actions
-│   ├── release.yaml             # Automated releases (ACTIVE)
-│   └── eks-terraform.yml.example # Example deployment workflow (DISABLED)
 ├── environments/                # Environment-specific configurations
 │   ├── dev/                     # Development environment
-│   │   ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
-│   │   ├── variables.tf         # Variable definitions
+│   │   ├── backend.tf          # S3 backend configuration
 │   │   ├── main.tf             # Main Terraform configuration
 │   │   ├── outputs.tf          # Output values
-│   │   └── backend.tf          # S3 backend configuration
+│   │   ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+│   │   └── variables.tf         # Variable definitions
 │   └── pro/                     # Production environment
-│       ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
-│       ├── variables.tf         # Variable definitions
+│       ├── backend.tf          # S3 backend configuration
 │       ├── main.tf             # Main Terraform configuration
 │       ├── outputs.tf          # Output values
-│       └── backend.tf          # S3 backend configuration
-├── modules/                     # Reusable Terraform modules
-│   ├── aws_iam/                 # IAM roles and policies
-│   ├── aws_organizations/       # AWS Organizations setup
-│   ├── ebs-csi/                 # EBS CSI driver with Pod Identity
-│   ├── ecr/                     # Elastic Container Registry
-│   ├── efs-csi/                 # EFS CSI driver with Pod Identity
-│   ├── eks-karpenter/          # EKS cluster with Karpenter
-│   ├── github-oidc-provider/   # GitHub OIDC for CI/CD
-│   ├── kms-key/                # KMS encryption keys
-│   └── s3/                     # S3 buckets and policies
+│       ├── terraform.tfvars.example # Example variables (COPY & CUSTOMIZE)
+│       └── variables.tf         # Variable definitions
 ├── global/                     # Global/shared resources
 │   ├── create-bucket/          # 🚨 S3 state bucket creation (RUN FIRST)
 │   │   ├── main.tf             # Bucket creation configuration
-│   │   ├── variables.tf        # Bucket variables
 │   │   ├── outputs.tf          # Bucket outputs
-│   │   └── terraform.tfvars.example # Example bucket config (COPY & CUSTOMIZE)
-│   ├── repos-ecr/              # 📦 ECR container registries (OPTIONAL)
-│   │   ├── main.tf             # ECR repository configuration
-│   │   ├── variables.tf        # ECR variables
-│   │   ├── outputs.tf          # ECR outputs  
+│   │   ├── README.md           # Bucket setup documentation
+│   │   ├── terraform.tfvars.example # Example bucket config (COPY & CUSTOMIZE)
+│   │   └── variables.tf        # Bucket variables
+│   ├── github-oidc/            # GitHub OIDC provider setup (OPTIONAL)
 │   │   ├── backend.tf          # S3 backend configuration
-│   │   └── terraform.tfvars.example # Example ECR config (COPY & CUSTOMIZE)
-│   └── github-oidc/            # GitHub OIDC provider setup (OPTIONAL)
-│       ├── main.tf             # OIDC provider configuration
-│       ├── variables.tf        # OIDC variables
-│       ├── outputs.tf          # OIDC outputs
+│   │   ├── main.tf             # OIDC provider configuration
+│   │   ├── outputs.tf          # OIDC outputs
+│   │   ├── README.md           # OIDC setup documentation
+│   │   ├── terraform.tfvars.example # Example OIDC config (COPY & CUSTOMIZE)
+│   │   └── variables.tf        # OIDC variables
+│   └── repos-ecr/              # 📦 ECR container registries (OPTIONAL)
 │       ├── backend.tf          # S3 backend configuration
-│       └── terraform.tfvars.example # Example OIDC config (COPY & CUSTOMIZE)
-└── k8s-argo-apps/             # Kubernetes ArgoCD applications
-    ├── application.yaml        # ArgoCD application manifests
-    └── stateful-app.yaml      # Example stateful application
+│       ├── main.tf             # ECR repository configuration
+│       ├── outputs.tf          # ECR outputs
+│       ├── README.md           # ECR setup documentation
+│       ├── terraform.tfvars.example # Example ECR config (COPY & CUSTOMIZE)
+│       └── variables.tf        # ECR variables
+├── k8s-argo-apps/             # Kubernetes ArgoCD applications
+│   ├── application.yaml        # ArgoCD application manifests
+│   ├── repo-secret.yaml       # Git repository secret
+│   └── stateful-app.yaml      # Example stateful application
+└── modules/                    # Reusable Terraform modules
+    ├── ebs-csi/                # EBS CSI driver with Pod Identity
+    ├── ecr/                    # Elastic Container Registry
+    ├── efs-csi/                # EFS CSI driver with Pod Identity
+    ├── eks-karpenter/         # EKS cluster with Karpenter
+    │   ├── iam/               # IAM roles and policies
+    │   ├── values/            # Helm chart values
+    │   ├── main.tf            # Module main configuration
+    │   ├── variables.tf       # Module variables
+    │   ├── outputs.tf         # Module outputs
+    │   ├── SECURITY.md        # Security documentation
+    │   └── *.tf               # Additional module files
+    ├── github-oidc-provider/  # GitHub OIDC for CI/CD
+    ├── kms-key/               # KMS encryption keys
+    ├── s3/                    # S3 buckets and policies
+    └── README.md              # Modules documentation
 ```
 
 ---
@@ -228,19 +234,13 @@ task --version         # Taskfile (optional but recommended)
 - Route53 hosted zone configured (replace `happycuban-example.dk` with your domain)
 - AWS credentials configured (`aws configure`)
 
-### Required Terraform Providers
-- `hashicorp/aws`
-- `hashicorp/kubernetes`
-- `hashicorp/helm`
-- `alekc/kubectl`
-
 ---
 
 ## 🔧 Configuration
 
 > **⚠️ IMPORTANT**: This repository uses `.tfvars.example` files with placeholder values. You MUST copy these to `.tfvars` files and customize with your actual values before deployment.
 
-> **⚠️ DOMAIN**: This example uses placeholder domain `happycuban-example.dk`. Simply update the domain in your `terraform.tfvars` file - no need to search and replace throughout files.
+> **⚠️ DOMAIN**: This example uses placeholder domain `happycuban-example.dk`. Simply update the domain in your `terraform.tfvars` file.
 
 ### 1. Copy Example Configuration Files
 
@@ -255,7 +255,13 @@ cp environments/pro/terraform.tfvars.example environments/pro/terraform.tfvars
 cp global/github-oidc/terraform.tfvars.example global/github-oidc/terraform.tfvars
 ```
 
-### 2. Customize Configuration Values
+⚠️ **Important**: 
+### 2. 🌐 Configure Route53 Hosted Zone (Step-by-Step)
+
+> **📚 Reference**: [AWS Route53 Configuration Guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/dns-configuring.html)
+
+
+### 3. Customize Configuration Values
 
 Edit `environments/dev/terraform.tfvars` with your actual values:
 
@@ -275,8 +281,8 @@ cluster_name = "my-demo-eks-cluster"  # Your desired cluster name
 
 # DNS Configuration (CRITICAL - Must configure your own domain)
 hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXXX"  # Your Route53 hosted zone ID
-domain_name = "yourdomain.com"  # Replace with your actual domain
-subject_alternative_names = "*.yourdomain.com"  # Wildcard certificate
+domain_name = "happycuban-example.dk"  # Replace with your actual domain
+subject_alternative_names = "*.happycuban-example.dk"  # Wildcard certificate
 
 # Environment & Project
 environment = "dev"
@@ -297,12 +303,13 @@ additional_allowed_ips = [
 
 > **⚠️ CRITICAL**: The `bucket` name in your `terraform.tfvars` **must exactly match** the hardcoded `bucket` name in `environments/dev/backend.tf`. Terraform backend configuration cannot use variables!
 
-⚠️ **Important**: 
+---
+
+### 4. Backend Configuration 
 - Never commit `*.tfvars` files to git - they contain sensitive data!
 - The `.gitignore` file is configured to block `*.tfvars` files automatically
 - Always use `.tfvars.example` files as templates
 
----
 
 ## 🚀 Deployment
 
@@ -339,34 +346,7 @@ terraform apply
 # - global/github-oidc/backend.tf (if using CI/CD)
 ```
 
-### Option 1: Using Taskfile
-
-```bash
-# Install Taskfile (if not already installed)
-# macOS
-brew install go-task/tap/go-task
-
-# Linux
-sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-
-# Windows
-choco install go-task
-
-# Show available tasks
-task --list
-
-# Deploy development environment
-task deploy ENV=dev
-
-# Check cluster health
-task health ENV=dev
-
-# Access services
-task argocd-ui ENV=dev        # ArgoCD UI
-task argocd-password ENV=dev  # Get ArgoCD password
-```
-
-### Option 2: Manual Terraform Commands (Recommended)
+### Option 1: Manual Terraform Commands (Recommended)
 
 ```bash
 # Navigate to environment directory
@@ -382,7 +362,7 @@ terraform plan
 terraform apply
 
 # Configure kubectl
-aws eks update-kubeconfig --region eu-central-1 --name eks-cluster
+aws eks update-kubeconfig --region us-west-2 --name eks-cluster
 ```
 
 ### 3. Verify Deployment
