@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "terraform-infrastructure": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "skillPath": "skills/terraform-infrastructure/SKILL.md",
+      "computedHash": "a93c75d1ffe86c3bdce839e66a02940330e3ed1fd3864e49840eef3827e6612f"
+    }
+  }
+}
