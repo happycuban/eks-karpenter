@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/happycuban/eks-karpenter/compare/v1.1.0...v1.1.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* align template outputs and argocd host ([7271300](https://github.com/happycuban/eks-karpenter/commit/72713005229865562dea9f683f60644ac3cf6d10))
+
 # [1.1.0](https://github.com/happycuban/eks-karpenter/compare/v1.0.0...v1.1.0) (2025-10-25)
 
 
