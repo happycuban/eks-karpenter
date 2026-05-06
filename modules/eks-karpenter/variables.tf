@@ -99,7 +99,7 @@ variable "intra_subnets" {
 variable "base_allowed_ips" {
   type        = list(string)
   description = "Base IP addresses/CIDR blocks allowed to access AWS resources (defined in module)"
-  default = []
+  default     = []
 
   validation {
     condition = alltrue([

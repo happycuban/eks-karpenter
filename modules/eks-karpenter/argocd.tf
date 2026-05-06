@@ -12,7 +12,11 @@ resource "helm_release" "argocd" {
   create_namespace = true
   version          = "8.5.8"
 
-  values = [file("${path.module}/values/argocd.yaml")]
+  values = [
+    templatefile("${path.module}/values/argocd.yaml.tpl", {
+      domain_name = var.domain_name
+    })
+  ]
 
   depends_on = [
     helm_release.traefik
@@ -33,10 +37,10 @@ resource "kubectl_manifest" "argocd-ingressroute" {
     apiVersion: traefik.io/v1alpha1
     kind: IngressRoute
     metadata:
-      name: example-argocd-ingress
+      name: argocd-ingress
       annotations:
         kubernetes.io/ingress.class: traefik
-        # external-dns.alpha.kubernetes.io/hostname: example-argocd.happycuban-example.dk
+        # external-dns.alpha.kubernetes.io/hostname: argocd.${var.domain_name}
       namespace: argocd
       labels:
         app.kubernetes.io/name: traefik
@@ -47,7 +51,7 @@ resource "kubectl_manifest" "argocd-ingressroute" {
         - web
         - websecure
       routes:
-        - match: Host(`example-argocd.${var.domain_name}`)
+        - match: Host(`argocd.${var.domain_name}`)
           kind: Rule
           middlewares:
             - name: admin-ip-whitelist

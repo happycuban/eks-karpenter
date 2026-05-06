@@ -44,12 +44,12 @@ module "kms-key" {
 module "ebs_csi" {
   source = "../../modules/ebs-csi"
 
-  region                              = var.region
-  env                                 = var.environment
-  cluster_name                        = var.cluster_name
-  ebs_csi_kms                         = module.kms-key.key_arn
-  create_default_storage_class        = true
-  cluster_endpoint                    = module.eks_karpenter.cluster_endpoint
-  cluster_certificate_authority_data  = module.eks_karpenter.cluster_certificate_authority_data
+  region                             = var.region
+  env                                = var.environment
+  cluster_name                       = var.cluster_name
+  ebs_csi_kms                        = module.kms-key.key_arn
+  create_default_storage_class       = true
+  cluster_endpoint                   = module.eks_karpenter.cluster_endpoint
+  cluster_certificate_authority_data = module.eks_karpenter.cluster_certificate_authority_data
 }
 

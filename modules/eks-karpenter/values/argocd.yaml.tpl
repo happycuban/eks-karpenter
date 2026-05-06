@@ -13,7 +13,7 @@ server:
   
   # Configure ArgoCD to work behind Traefik proxy
   config:
-    url: https://argocd.happycuban-example.dk
+    url: https://argocd.${domain_name}
     application.instanceLabelKey: argocd.argoproj.io/instance
   
   # Additional server configuration for proxy
