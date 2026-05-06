@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/happycuban/eks-karpenter/compare/v1.1.1...v1.2.0) (2026-05-06)
+
+
+### Features
+
+* streamline clone-to-deploy template setup ([befaa00](https://github.com/happycuban/eks-karpenter/commit/befaa00ce4f871a2c54b85066bda66238a56dbf0))
+
 ## [1.1.1](https://github.com/happycuban/eks-karpenter/compare/v1.1.0...v1.1.1) (2026-05-06)
 
 
