@@ -60,18 +60,45 @@ variable "additional_allowed_ips" {
 variable "domain_name" {
   type        = string
   description = "Domain name for external DNS records"
-  default     = "happycuban-example.dk"
 }
 
 variable "subject_alternative_names" {
   type        = string
   description = "Subject Alternative Names for the certificate"
-  default     = "*.happycuban-example.dk"
+}
+
+variable "acme_email" {
+  type        = string
+  description = "Email address used by Let's Encrypt for certificate registration notices"
 }
 
 variable "restrict_cluster_access" {
   type        = bool
   description = "Enable IP restrictions for cluster access. When true, only allowed IPs can access the cluster. When false, all IPs are allowed."
+  default     = false
+}
+
+variable "eks_admin_role_name" {
+  type        = string
+  description = "IAM role name to create and grant cluster-admin access"
+  default     = "eks-admin"
+}
+
+variable "manager_user_name" {
+  type        = string
+  description = "IAM user name to create for assuming the EKS admin role"
+  default     = "manager"
+}
+
+variable "github_actions_role_name" {
+  type        = string
+  description = "Existing IAM role name used by GitHub Actions when enable_github_actions_access is true"
+  default     = "github-actions"
+}
+
+variable "enable_github_actions_access" {
+  type        = bool
+  description = "Grant EKS access to the GitHub Actions IAM role. Run global/github-oidc first or provide an existing role when true."
   default     = false
 }
 

@@ -5,9 +5,10 @@ version: '3'
 
 vars:
   CLUSTER_NAME: eks-cluster
-  REGION: eu-central-1
-  HOSTED_ZONE_ID: Z0123456789ABCDEF123
-  DOMAIN: happycuban-example.dk
+  REGION: us-west-2
+  HOSTED_ZONE_ID: ZXXXXXXXXXXXXXXXXXXXXX
+  DOMAIN: example.com
+  GITHUB_ACTIONS_ROLE_NAME: github-actions
   DEFAULT_ENV: dev
 
 tasks:
@@ -21,7 +22,7 @@ tasks:
     desc: "Initialize Terraform in specified environment (default: dev)"
     dir: "environments/{{.ENV | default .DEFAULT_ENV}}"
     cmds:
-      - terraform init
+      - test -f backend.hcl && terraform init -backend-config=backend.hcl || terraform init
       - terraform validate
 
   validate-terraform:
@@ -303,13 +304,13 @@ tasks:
     silent: true
     desc: "Show ArgoCD access information"
     cmds:
-      - "echo 'ArgoCD: https://example-argocd.happycuban-example.dk (user: admin, password: task get-argocd-password)'"
+      - "echo 'ArgoCD: https://argocd.{{.DOMAIN}} (user: admin, password: task get-argocd-password)'"
 
   open-traefik:
     silent: true
     desc: "Show Traefik Dashboard access information"
     cmds:
-      - "echo 'Traefik Dashboard: https://traefik-dashboard.happycuban-example.dk/dashboard'"
+      - "echo 'Traefik Dashboard: https://traefik-dashboard.{{.DOMAIN}}/dashboard'"
 
   get-argocd-password:
     silent: true
@@ -415,7 +416,7 @@ tasks:
       - aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[?contains(Arn, `token.actions.githubusercontent.com`)].Arn' --output table
       - echo ""
       - echo "🎭 GitHub Actions Role:"
-      - aws iam get-role --role-name github-actions --query 'Role.{RoleName:RoleName,Arn:Arn,TrustPolicy:AssumeRolePolicyDocument}' --output table 2>/dev/null || echo "Role not found"
+      - aws iam get-role --role-name {{.GITHUB_ACTIONS_ROLE_NAME}} --query 'Role.{RoleName:RoleName,Arn:Arn,TrustPolicy:AssumeRolePolicyDocument}' --output table 2>/dev/null || echo "Role not found"
 
   workflow-status:
     silent: true

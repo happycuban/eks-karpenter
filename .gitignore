@@ -29,6 +29,8 @@ secure.auto.tfvars
 # Prevent committing terraform variables with sensitive data
 *.tfvars
 !*.tfvars.example
+backend.hcl
+!backend.hcl.example
 
 ##Modestos egen mappe
 #Projects

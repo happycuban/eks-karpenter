@@ -4,11 +4,6 @@
 terraform {
   required_version = ">= 1.0"
 
-  backend "s3" {
-    bucket       = "terraform-state-2025"
-    key          = "dev/terraform.tfstate"
-    region       = "eu-central-1"
-    use_lockfile = true
-    encrypt      = true
-  }
+  # Configure with: terraform init -backend-config=backend.hcl
+  backend "s3" {}
 }

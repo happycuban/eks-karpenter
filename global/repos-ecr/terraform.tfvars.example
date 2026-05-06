@@ -9,17 +9,17 @@
 ###############################################################################
 # AWS Configuration
 ###############################################################################
-region = "eu-central-1"  # Replace with your preferred AWS region
+region = "us-west-2" # Replace with your preferred AWS region
 
 ###############################################################################
 # S3 Backend Configuration
 ###############################################################################
-bucket = "terraform-state-2025"  # Replace the S3 bucket name
+bucket = "your-unique-terraform-state-bucket" # Same bucket used in backend.hcl
 
 ###############################################################################
 # ECR Repos
 ###############################################################################
 github_repos = [
-  "your-infrastructure-repo",
-  "your-apps-repo",
+  "your-github-owner/your-infrastructure-repo",
+  "your-github-owner/your-apps-repo",
 ]

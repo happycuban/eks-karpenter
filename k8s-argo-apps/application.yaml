@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:happycuban/eks-karpenter.git
+    repoURL: https://github.com/your-github-owner/your-apps-repo.git
     targetRevision: HEAD
     path: apps/dev/argo-cd-apps
   destination:

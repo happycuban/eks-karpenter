@@ -149,10 +149,10 @@ module "eks" {
   enable_cluster_creator_admin_permissions = false
 
   # Grant access to both GitHub Actions and maintain personal cluster creator access
-  access_entries = {
+  access_entries = merge({
     # Ensure personal account always has cluster admin access regardless of who runs Terraform
     cluster_creator = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eks-admin"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.eks_admin_role_name}"
       type          = "STANDARD"
       policy_associations = {
         admin = {
@@ -163,9 +163,10 @@ module "eks" {
         }
       }
     }
+    }, var.enable_github_actions_access ? {
     # Grant GitHub Actions OIDC role deployment access
     github-actions = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/github-actions"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.github_actions_role_name}"
       type          = "STANDARD"
       policy_associations = {
         edit = {
@@ -183,7 +184,7 @@ module "eks" {
         }
       }
     }
-  }
+  } : {})
 
   node_security_group_tags = {
     # NOTE - if creating multiple security groups with this module, only tag the

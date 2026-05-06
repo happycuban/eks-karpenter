@@ -11,6 +11,8 @@
 3. **🔧 Configure Variables**: Copy `.tfvars.example` files and customize with your values
 4. **🚀 EKS Deployment**: Run deployment commands from environment directories
 
+For the shortest clone-to-deploy path, follow [GETTING_STARTED.md](GETTING_STARTED.md).
+
 ## 📖 Table of Contents
 
 - [Overview](#overview)
@@ -231,7 +233,7 @@ task --version         # Taskfile (optional but recommended)
 
 ### AWS Prerequisites
 - AWS Account with appropriate permissions
-- Route53 hosted zone configured (replace `happycuban-example.dk` with your domain)
+- Route53 hosted zone configured for your domain
 - AWS credentials configured (`aws configure`)
 
 ---
@@ -240,7 +242,7 @@ task --version         # Taskfile (optional but recommended)
 
 > **⚠️ IMPORTANT**: This repository uses `.tfvars.example` files with placeholder values. You MUST copy these to `.tfvars` files and customize with your actual values before deployment.
 
-> **⚠️ DOMAIN**: This example uses placeholder domain `happycuban-example.dk`. Simply update the domain in your `terraform.tfvars` file.
+> **⚠️ DOMAIN**: This example uses placeholder domain `example.com`. Update the domain, hosted zone ID, and ACME email in your `terraform.tfvars` file.
 
 
 
@@ -255,12 +257,15 @@ task --version         # Taskfile (optional but recommended)
 ```bash
 # Development environment
 cp environments/dev/terraform.tfvars.example environments/dev/terraform.tfvars
+cp environments/dev/backend.hcl.example environments/dev/backend.hcl
 
-# Production environment  
+# Production environment
 cp environments/pro/terraform.tfvars.example environments/pro/terraform.tfvars
+cp environments/pro/backend.hcl.example environments/pro/backend.hcl
 
 # GitHub OIDC configuration (OPTIONAL - only for CI/CD)
 cp global/github-oidc/terraform.tfvars.example global/github-oidc/terraform.tfvars
+cp global/github-oidc/backend.hcl.example global/github-oidc/backend.hcl
 ```
 
 ### 3. Customize Configuration Values
@@ -270,12 +275,12 @@ Edit `environments/dev/terraform.tfvars` with your actual values:
 ```terraform
 # AWS Configuration
 region = "us-west-2"  # Your preferred AWS region
-bucket = "terraform-state-2025"  # Must match backend.tf bucket name
+bucket = "your-unique-terraform-state-bucket"
 
 # GitHub Repositories (for OIDC integration)
 github_repos = [
-  "your-infrastructure-repo",
-  "your-apps-repo"
+  "your-github-owner/your-infrastructure-repo",
+  "your-github-owner/your-apps-repo"
 ]
 
 # EKS Cluster Configuration
@@ -283,8 +288,9 @@ cluster_name = "my-demo-eks-cluster"  # Your desired cluster name
 
 # DNS Configuration (CRITICAL - Must configure your own domain)
 hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXXX"  # Your Route53 hosted zone ID
-domain_name = "happycuban-example.dk"  # Replace with your actual domain
-subject_alternative_names = "*.happycuban-example.dk"  # Wildcard certificate
+domain_name = "example.com"
+subject_alternative_names = "*.example.com"
+acme_email = "admin@example.com"
 
 # Environment & Project
 environment = "dev"
@@ -301,16 +307,20 @@ additional_allowed_ips = [
   # "203.0.113.0/24",  # Example: Company office network
   # "198.51.100.1/32", # Example: VPN gateway IP
 ]
+
+# Optional GitHub Actions EKS access. Deploy global/github-oidc before enabling.
+enable_github_actions_access = false
 ```
 
-> **⚠️ CRITICAL**: The `bucket` name in your `terraform.tfvars` **must exactly match** the hardcoded `bucket` name in `environments/dev/backend.tf`. Terraform backend configuration cannot use variables!
+> **⚠️ CRITICAL**: The `bucket` and `region` in `backend.hcl` must match your real Terraform state bucket. Terraform backend configuration cannot use normal variables.
 
 ---
 
-### 4. Backend Configuration 
+### 4. Backend Configuration
 - Never commit `*.tfvars` files to git - they contain sensitive data!
+- Never commit `backend.hcl` files to git - they contain account-specific backend values.
 - The `.gitignore` file is configured to block `*.tfvars` files automatically
-- Always use `.tfvars.example` files as templates
+- Always use `.tfvars.example` and `backend.hcl.example` files as templates
 
 
 ## 🚀 Deployment
@@ -341,11 +351,7 @@ terraform init
 terraform plan
 terraform apply
 
-# ⚠️ IMPORTANT: Update backend.tf files in ALL environments with your actual bucket name
-# Replace "terraform-state-2025" with your bucket name in:
-# - environments/dev/backend.tf
-# - environments/pro/backend.tf
-# - global/github-oidc/backend.tf (if using CI/CD)
+# Configure backend.hcl files with this bucket before deploying environments.
 ```
 
 ### Option 1: Manual Terraform Commands (Recommended)
@@ -355,7 +361,7 @@ terraform apply
 cd environments/dev
 
 # Initialize Terraform
-terraform init
+terraform init -backend-config=backend.hcl
 
 # Plan deployment (review changes)
 terraform plan
@@ -375,7 +381,7 @@ kubectl get nodes
 kubectl get pods --all-namespaces
 
 # Access ArgoCD
-echo "ArgoCD URL: https://argocd.happycuban-example.dk"
+echo "ArgoCD URL: https://argocd.example.com"
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
 # Monitor Karpenter scaling
@@ -390,9 +396,9 @@ After successful deployment, the following services will be available:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **ArgoCD** | `https://argocd.happycuban-example.dk` | GitOps deployment management |
-| **Traefik Dashboard** | `https://traefik.happycuban-example.dk` | Load balancer and routing status |
-| **Your Apps** | `https://app-name.happycuban-example.dk` | Your deployed applications |
+| **ArgoCD** | `https://argocd.example.com` | GitOps deployment management |
+| **Traefik Dashboard** | `https://traefik-dashboard.example.com` | Load balancer and routing status |
+| **Your Apps** | `https://app-name.example.com` | Your deployed applications |
 
 ### 🔐 Default Credentials
 

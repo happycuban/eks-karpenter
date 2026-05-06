@@ -40,7 +40,12 @@ resource "helm_release" "updater" {
   create_namespace = true
   version          = "0.12.3"
 
-  values = [file("${path.module}/values/image-updater.yaml")]
+  values = [
+    templatefile("${path.module}/values/image-updater.yaml.tpl", {
+      region     = var.region
+      account_id = data.aws_caller_identity.current.account_id
+    })
+  ]
 
   # Idempotent behavior: If release exists, this will upgrade it
   # If it doesn't exist, this will install it

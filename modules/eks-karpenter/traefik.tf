@@ -219,7 +219,7 @@ resource "kubectl_manifest" "cert_manager_http_issuer" {
       namespace: cert-manager
     spec:
       acme:
-        email: "admin@happycuban-example.dk"
+        email: "${var.acme_email}"
         server: "https://acme-v02.api.letsencrypt.org/directory"
         privateKeySecretRef:
           name: cert-manager-acme-private-key
@@ -245,7 +245,7 @@ resource "kubectl_manifest" "cert_manager_dns_issuer" {
       namespace: cert-manager
     spec:
       acme:
-        email: "admin@happycuban-example.dk"
+        email: "${var.acme_email}"
         server: "https://acme-v02.api.letsencrypt.org/directory"
         privateKeySecretRef:
           name: cert-manager-acme-private-key

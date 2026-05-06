@@ -1,5 +1,5 @@
 resource "aws_iam_role" "eks_admin" {
-  name = "eks-admin"
+  name = var.eks_admin_role_name
 
   assume_role_policy = <<POLICY
 {
@@ -55,7 +55,7 @@ resource "aws_iam_role_policy_attachment" "eks_admin" {
 }
 
 resource "aws_iam_user" "manager" {
-  name = "manager"
+  name = var.manager_user_name
 }
 
 resource "aws_iam_policy" "eks_assume_admin" {

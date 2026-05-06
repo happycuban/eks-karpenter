@@ -74,9 +74,8 @@ output "eks_cluster_info" {
 
 ############################# ACCESS & SECURITY #########################################
         Pod Identity Agent                     Enabled (for secure AWS access)
-        GitHub Actions Role                    github-actions (EKS access configured)
-        Personal Access                        tf-playground (cluster admin)
-        Manager Role                           eks-admin
+        GitHub Actions Access                  ${var.enable_github_actions_access ? var.github_actions_role_name : "disabled"}
+        Manager Role                           ${var.eks_admin_role_name}
         Developer User                         eks-developer
 
 ############################# USAGE EXAMPLES #############################################
